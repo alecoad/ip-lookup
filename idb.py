@@ -16,6 +16,32 @@ import urllib.error
 
 BASE_URL = "https://internetdb.shodan.io/{}"
 
+# ANSI colors
+RESET  = "\033[0m"
+BOLD   = "\033[1m"
+CYAN   = "\033[36m"
+GREEN  = "\033[32m"
+YELLOW = "\033[33m"
+RED    = "\033[31m"
+GREY   = "\033[90m"
+WHITE  = "\033[97m"
+
+# Per-field colors
+FIELD_COLORS = {
+    "Ports":     GREEN,
+    "Hostnames": CYAN,
+    "CPEs":      YELLOW,
+    "Vulns":     RED,
+    "Tags":      WHITE,
+}
+
+
+def c(color: str, text: str) -> str:
+    """Wrap text in a color if stdout is a TTY."""
+    if sys.stdout.isatty():
+        return f"{color}{text}{RESET}"
+    return text
+
 
 def lookup(ip: str) -> dict:
     try:
@@ -35,7 +61,7 @@ def lookup(ip: str) -> dict:
 
 def fmt(result: dict) -> str:
     if "error" in result:
-        return f"  [!] {result['error']}"
+        return c(GREY, f"  [!] {result['error']}")
 
     fields = [
         ("Ports",     ", ".join(str(p) for p in result.get("ports", []))),
@@ -46,9 +72,12 @@ def fmt(result: dict) -> str:
     ]
     active = [(k, v) for k, v in fields if v]
     if not active:
-        return "  (no interesting data)"
+        return c(GREY, "  (no interesting data)")
     width = max(len(k) for k, _ in active)
-    lines = [f"  {k:{width}} : {v}" for k, v in active]
+    lines = [
+        f"  {c(BOLD, f'{k:{width}}')} {c(GREY, ':')} {c(FIELD_COLORS[k], v)}"
+        for k, v in active
+    ]
     return "\n".join(lines)
 
 
@@ -67,7 +96,7 @@ def main():
 
     results = []
     for ip in ips:
-        print(f"\n[{ip}]")
+        print(f"\n{c(BOLD + CYAN, f'[ {ip} ]')}")
         data = lookup(ip)
         print(fmt(data))
         results.append(data)
@@ -77,7 +106,7 @@ def main():
     if args.output:
         with open(args.output, "w") as f:
             json.dump(results, f, indent=2)
-        print(f"\nSaved {len(results)} results to {args.output}")
+        print(f"\n{c(GREEN, 'Saved')} {len(results)} results to {c(BOLD, args.output)}")
 
 
 if __name__ == "__main__":
