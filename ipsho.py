@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
-Shodan InternetDB bulk lookup — no API key required.
+Shodan InternetDB lookup — no API key required.
 Usage:
-    python idb.py ips.txt
-    echo "1.1.1.1" | python idb.py -
-    python idb.py ips.txt -o results.json
+    ipsho 1.1.1.1                 # single IP
+    ipsho 1.1.1.1 8.8.8.8         # multiple IPs
+    ipsho -l ips.txt              # list / scope file
+    cat ips.txt | ipsho           # stdin
+    ipsho -l ips.txt -o out.json  # save raw JSON
 """
 
 import sys
@@ -82,17 +84,29 @@ def fmt(result: dict) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Shodan InternetDB bulk lookup")
-    parser.add_argument("input", help="file of IPs (one per line) or - for stdin")
+    parser = argparse.ArgumentParser(description="Shodan InternetDB lookup")
+    parser.add_argument("targets", nargs="*", help="one or more IPs to look up")
+    parser.add_argument("-l", "--list",
+                        help="file of IPs (one per line) or - for stdin")
     parser.add_argument("-o", "--output", help="save raw JSON results to file")
     parser.add_argument("--delay", type=float, default=0.5,
                         help="seconds between requests (default: 0.5)")
     args = parser.parse_args()
 
-    src = sys.stdin if args.input == "-" else open(args.input)
-    ips = [line.strip() for line in src if line.strip() and not line.startswith("#")]
-    if args.input != "-":
-        src.close()
+    ips = list(args.targets)
+
+    if args.list:
+        src = sys.stdin if args.list == "-" else open(args.list)
+        ips += [line.strip() for line in src
+                if line.strip() and not line.startswith("#")]
+        if args.list != "-":
+            src.close()
+    elif not ips and not sys.stdin.isatty():
+        ips += [line.strip() for line in sys.stdin
+                if line.strip() and not line.startswith("#")]
+
+    if not ips:
+        parser.error("provide an IP, -l FILE, or pipe IPs on stdin")
 
     results = []
     for ip in ips:

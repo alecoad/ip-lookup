@@ -4,20 +4,35 @@ Bulk IP lookup against the [Shodan InternetDB](https://internetdb.shodan.io/) AP
 
 Returns open ports, hostnames, CPEs, known CVEs, and tags for each IP.
 
+## Install
+
+```bash
+chmod +x ipsho.py
+ln -sf "$PWD/ipsho.py" ~/.local/bin/ipsho   # any dir on your PATH
+```
+
+Then run `ipsho` from anywhere.
+
 ## Usage
 
 ```bash
-# From a file (one IP per line)
-python idb.py ips.txt
+# Single IP
+ipsho 1.1.1.1
+
+# Multiple IPs
+ipsho 1.1.1.1 8.8.8.8
+
+# From a list / scope file (one IP per line)
+ipsho -l ips.txt
 
 # From stdin
-echo -e "1.1.1.1\n8.8.8.8" | python idb.py -
+echo -e "1.1.1.1\n8.8.8.8" | ipsho
 
 # Save raw JSON output
-python idb.py ips.txt -o results.json
+ipsho -l ips.txt -o results.json
 
 # Adjust request delay (default 0.5s)
-python idb.py ips.txt --delay 1.0
+ipsho -l ips.txt --delay 1.0
 ```
 
 ## Example output
